@@ -86,50 +86,6 @@ function addBeatListener(comp, startclass) {
   });
 }
 
-// TODO long-term, these rng elements to not need to be specific to "buildings"
-
-/*
-  Helper function for rng-building-arc, recursively add buildings to a base with some arc
-*/
-function arcBuildings(building, buildingAttrs, angle, dist, scale, axis, depth) {
-  if (depth > 1) {
-    var xoffset = 0; var yoffset = -10; var zoffset = 0;
-    var xangle = 0; var yangle = 0;
-    //var angle = 0;
-    // Calibrated for a 1x1 block
-    if (axis == 'y') {
-      var xoffset = 0;//0.05 * (angle / 5);
-      var yoffset = 6 + (0.1 * (angle / 5));
-      yangle = angle;
-    }
-    // Calibrated for a 1x2 block
-    else if (axis == 'x') {
-      var xoffset = dist - 0.1 * (angle / 5);
-      var yoffset = 0;
-      var zoffset = 0.25 * (angle / 5);
-      xangle = angle;
-    }
-    
-    //var animAttrs = ' dir: alternate; loop: true; easing: easeInOutExpo; dur: ' + dur;
-    var mover = document.createElement('a-entity');
-    mover.setAttribute('animation__move', 'property: position; from: 0 0 0; to: ' + -xoffset + ' ' + yoffset + ' ' + zoffset + ';'
-                       + animAttrs + 'easing: easeInOutExpo; startEvents: started; dur: ' + (dur / 2));
-    mover.setAttribute('class', 'arc');
-
-    var nextbuilding = document.createElement('a-entity');
-    nextbuilding.setAttribute('building', buildingAttrs);
-    //nextbuilding.setAttribute('position', "0 0 0");
-    nextbuilding.setAttribute('scale', scale + " " + scale + " " + scale);
-    nextbuilding.setAttribute('animation__turn', 'property: rotation; from: 0 0 0; to: 0 ' + xangle + ' ' + yangle + ';'
-                              + animAttrs + 'easing: easeInOutExpo; startEvents: started; dur: ' + (dur / 2));
-    nextbuilding.setAttribute('class', 'arc');
-
-    arcBuildings(nextbuilding, buildingAttrs, angle, dist, scale, axis, depth - 1);
-    mover.appendChild(nextbuilding);
-    building.appendChild(mover);
-  }
-}
-
 /* 
   Generate buildings which do not use shaders. These are made using
   individual plane geometries for windows. They use more GPU resources,
@@ -451,7 +407,7 @@ AFRAME.registerComponent('rng-disco-tunnel', {
       var rotation = "";
       var resolution = 2.0;
       var speed = 1.0;
-      var shape = 'cylinder';
+      var shape = 'sphere';
       // Floaters have different values
       if (i > 1) {
         shape = 'sphere';
@@ -502,8 +458,6 @@ AFRAME.registerComponent('rng-fractal-shader', {
     
     height: {default: 1},
     width: {default: 1},
-    
-    gem: {default: 'opal'},
   },
   init: function () {
     var data = this.data;
@@ -512,67 +466,60 @@ AFRAME.registerComponent('rng-fractal-shader', {
     this.shift = 0.0;
     
     this.speed = rng([0.5, 1.0, 2.0], data.speed);
-    this.resolution = rng([0.5, 1.0, 2.0, 8.0], data.resolution);
+    this.resolution = rng([0.5, 1.0, 2.0, 3.0], data.resolution);
     
     // Skip further in time and see new patterns
     var skip = data.skip;
     
     var entity = document.createElement('a-entity');
-    entity.setAttribute('geometry', "primitive: sphere; radius: " + (data.width / 2) + "segmentsWidth: 200; segmentsHeight: 200;");
-    entity.setAttribute('material', "side: double; shader: fractal-" + data.gem + "-shader; speed: " + this.speed
+    entity.setAttribute('geometry', "primitive: sphere; height: 5; width: 5; depth: 0; radius: " + (data.width / 2) + "segmentsWidth: 80; segmentsHeight: 80;");
+    entity.setAttribute('material', "side: double; shader: simple-fractal-shader; speed: " + this.speed
                     + "; resolution: " + this.resolution + "; skip: " + skip + "; amplitude: " + 0.2
-                    + "; displacement: " + 0.5 + "; scale: " + 4.0 + "; vertexnoise: " + 0.0
-                    + "; shatter: " + 1.0 + "; twist: " + 1.0);
+                    + "; displacement: " + 0.5 + "; scale: " + 4.0 + "; vertexnoise: " + 0.1
+                    + "; shatter: " + 1.0 + "; twist: " + 1.0 + "; speed: " + 1.0);
     this.el.appendChild(entity);
-    
     
     this.el.sceneEl.canvas.addEventListener('mousedown', this.onMouseDown, false);
     window.addEventListener('mousemove', this.onMouseMove, false);
     window.addEventListener("keydown", function(e){
-      updateKeys(e, data.gem);
-    });
-    function updateKeys(e, gem) {
-      var fractid = '#' + gem + '-fractal'
-      var uniforms = document.querySelector(fractid).children[0].getObject3D('mesh').material.uniforms;
       if(e.keyCode === 81) { // q key to shift back
-        uniforms['skip']['value'] -= 0.005;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['skip']['value'] -= 0.005;
       }
       if(e.keyCode === 69) { // e key to shift forward
-        uniforms['skip']['value'] += 0.005;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['skip']['value'] += 0.005;
       }
       if(e.keyCode === 90) { // z key to zoom in
-        uniforms['resolution']['value'] -= 0.1;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['resolution']['value'] -= 0.1;
       }
       if(e.keyCode === 88) { // x key to zoom out
-        uniforms['resolution']['value'] += 0.1;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['resolution']['value'] += 0.1;
       }
       if(e.keyCode === 67) { // c key to shatter
-        uniforms['shatter']['value'] -= 0.005;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['shatter']['value'] -= 0.005;
       }
       if(e.keyCode === 86) { // v key to reverse shatter
-        uniforms['shatter']['value'] += 0.005;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['shatter']['value'] += 0.005;
       }
       if(e.keyCode === 66) { // b key to reset shatter and twist
-        uniforms['shatter']['value'] = 1.0;
-        uniforms['twist']['value'] = 1.0;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['shatter']['value'] = 1.0;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['twist']['value'] = 1.0;
       }
       if(e.keyCode === 78) { // n key to twist
-        uniforms['twist']['value'] += 0.01;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['twist']['value'] += 0.01;
       }
       if(e.keyCode === 77) { // m key to untwist
-        uniforms['twist']['value'] -= 0.01;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['twist']['value'] -= 0.01;
       }
       if(e.keyCode === 82) { // r key to ripple
-        var ripple = uniforms['vertexnoise']['value'];
+        var ripple = document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['vertexnoise']['value'];
         if (ripple < 2) { // Ripple can literally eat the menu if left unchecked
-          uniforms['vertexnoise']['value'] += 0.1;
+          document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['vertexnoise']['value'] += 0.1;
         }
       }
       if(e.keyCode === 84) { // t key to reset ripple
-        uniforms['vertexnoise']['value'] = 0.0;
+        document.querySelector('#fractal').children[0].getObject3D('mesh').material.uniforms['vertexnoise']['value'] = 0.0;
       }
-      document.querySelector(fractid).children[0].getObject3D('mesh').material.uniforms = uniforms;
-    }
+    })
   },
   tick: function (event) {
     if (this.shift != 0) {

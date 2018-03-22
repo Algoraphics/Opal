@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Bubbles!</title>
+    <title>Opal</title>
     <meta name="description" content="Road.">
     <!-- Included components -->
     <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
-    <script src="https://rawgit.com/feiss/aframe-environment-component/master/dist/aframe-environment-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-animation-component/dist/aframe-animation-component.min.js"></script>
-    <script src="https://cdn.rawgit.com/zcanter/aframe-gradient-sky/master/dist/gradientsky.min.js"></script>
     <script src="https://npmcdn.com/aframe-event-set-component@3.0.1"></script>
-    <script src="https://npmcdn.com/aframe-template-component@3.1.1"></script>
-    <script src="https://unpkg.com/aframe-text-geometry-component@^0.5.0/dist/aframe-text-geometry-component.min.js"></script> 
+    <script src="https://npmcdn.com/aframe-template-component@3.1.1"></script> 
     <script src="components/includes.js"></script>
     <!-- My files -->
-    <script src="components/colors.js"></script>
-    <script src="components/entity-generator.js"></script>
     <script src="components/managers.js"></script>
     <script src="components/rng.js"></script>
     <script src="components/stuff.js"></script>
@@ -22,242 +16,20 @@
     <!-- Custom shaders -->
     <script src="shaders.js"></script>
     
-    <!-- Main menu buttons -->
-    <script id="about-link" type="text/html">
-      <a-entity class="link"
-        geometry="primitive: circle; radius: 4"
-        material="shader: flat; src: ${thumb}; side: double; opacity: 0.6"
-        menu-item="action: about">
-      </a-entity>
-    </script>
-    <script id="opal-link" type="text/html">
-      <a-entity class="link" id="opal-fractal"
-        rng-fractal-shader="width: 8; gem: opal; skip: 9.05; resolution: 0 0 0 1;"
-        menu-item="action: surround; infotext: Welcome to Opal!\n
-          Recommended activity: hit 'toggle info' below,
-          put on some music, sit back, and enjoy the show.\n
-          Keyboard controls (optional, adds variety):\n
-            Q : Move time forward
-            E : Move time backward \n
-            Z : Zoom in
-            X : Zoom out\n
-            C : Shatter
-            V : Reverse Shatter\n
-            N : Twist
-            M : Reverse Twist\n
-            B : Reset Shatter and Twist\n
-            R : Ripples (3D, try in VR!)
-            T : Turn off ripples\n
-        ">
-      </a-entity>
-    </script>
-    <script id="bismuth-link" type="text/html">
-      <a-entity class="link" id="bismuth-fractal"
-        rng-fractal-shader="width: 8; gem: bismuth; skip: 21.06; resolution: 0 0 0 1"
-        menu-item="action: surround; infotext: Welcome to Bismuth!\n
-          Recommended activity: hit 'toggle info' below,
-          put on some music, sit back, and enjoy the show.\n
-          Keyboard controls (optional, adds variety):\n
-            Q : Move time forward
-            E : Move time backward \n
-            Z : Zoom in
-            X : Zoom out\n
-            C : Shatter
-            V : Reverse Shatter\n
-            N : Twist
-            M : Reverse Twist\n
-            B : Reset Shatter and Twist\n
-            R : Ripples (3D, try in VR!)
-            T : Turn off ripples\n
-        ">
-      </a-entity>
-    </script>
-    <script id="ganzfeld-link" type="text/html">
-      <a-entity class="link" id="ganzfeld"
-        ganzfeld="radius: 4.25"
-        menu-item="action: surround; infotext: Welcome to the Ganzfeld Effect simulator!\n 
-          The Ganzfeld effect is a perception 'illusion'
-          where a uniform field of color causes the brain to
-          fill in visuals, meaning simple hallucinations.\n
-          In short, stare at this for a while and
-          you'll probably see some weird stuff.\n
-          It works best when combined with white noise.
-          Simply use the keyboard to pick a color 
-          (red and green work well) and turn on the noise.
-          It can take upwards of 20 minutes to experience the effect.\n
-          Hit the toggle button below to toggle this window.
-          Hit the main menu button below to return to the main menu.\n
-          Keyboard controls:\n
-           G : Cycle color (hold)
-           H : Play/Pause noise
-        ">
-      </a-entity>
-    </script>
-    <script id="main-link" type="text/html">
-      <a-entity class="link" id=main-button
-        geometry="primitive: box; width: 0.5; height: auto; depth: -0.1" 
-        material="color: black; opacity: 0.75"
-        text="value: Main menu; width: 1.5; color: white; align: center"
-        menu-item="action: main; tag: main; active: false">
-      </a-entity>
-      <a-entity id="info-text"
-        geometry="primitive: plane; width: 1; height: 1.3"
-        position="0 0.9 0.2" rotation="20 0 0"
-        material="opacity: 0.75"
-        text="value: This shouldn't be here"
-      </a-entity>
-    </script>
-    <script id="toggle-link" type="text/html">
-      <a-entity class="link"
-        geometry="primitive: box; width: 0.5; height: auto; depth: -0.1" 
-        material="color: black; opacity: 0.75"
-        text="value: Toggle info; width: 1.5; color: white; align: center"
-        menu-item="action: toggle; active: false">
-      </a-entity>
-    </script>
-    <script id="begin-link" type="text/html">
-      <a-entity class="link" id="begin" visible="false"
-        material="shader: caustic-shader; resolution: 2; color: yellow; backgroundColor: black; speed: 0.3; brightness: 2" 
-        text-geometry="value: Loading . . .; size: 0.025;"
-        menu-item="action: begin; active: false; tag: begin;">
-          <a-entity geometry="primitive: box; width: 0.22; height: 0.08; depth: 0.01"
-              position="0.1 0.02 0.05" material="shader: flat; opacity: 0;"></a-entity>
-      </a-entity>
-    </script>
   </head>
   <body>
-    <a-scene>
+    <a-scene id="fog" light="defaultLightsEnabled: false">
       <a-assets>
         <img id="stars" crossorigin="anonymous" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fstarfield.png?1513307410255">
-        <img id="exbot" crossorigin="anonymous" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2FExbot2.jpg?1518661785572">
-        
-        <audio id="side" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fside-of-the-road%5BMp3-Gratis.eu%20-%20Download%20Free%20Mp3%5D.mp3?1514392665329"></audio>
-        <audio id="noise" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2F02-White-Noise-10min.mp3?1518906350264" loop="true"></audio>
-        <audio id="click" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fbutton-click.mp3?1519576783848"></audio>
-        <audio id="swoop" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fbutton-start.mp3?1519577574614"></audio>
-        <audio id="tick" src="https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fbutton-tick.mp3?1519611977394"></audio>
-        
-        <a-mixin id="clicksound" sound="on: click; src: #click"></a-mixin>
-        <a-mixin id="startsound" sound="on: click; src: #swoop"></a-mixin>
-        
-        <a-mixin id="rainbow" rainbowcycle="speed: 3"></a-mixin>
-        <a-mixin id="alterColors" animation="property: material.color; dir: alternate; dur: 594.06; easing: easeInOutSine; loop: true; to: #FF00FF"></a-mixin>
-        <a-mixin id="scale" animation__scale= "property: scale; dir: alternate; dur: 297.03; easing: easeInSine; loop: true; to: 1.2 1 1.2"       ></a-mixin>
-        <a-mixin id="cubes"
-          geometry="primitive: box; height: 0.5; width: 0.5; depth: 0.5"
-          material="color: #0000FF; shader: flat"
-        ></a-mixin>
-        
-        <a-mixin id="window"
-          material="color: #FFFF00; shader: flat"></a-mixin>
-        <a-mixin id="rect" mixin="window"
-          geometry="primitive: plane; width: 1; height: 2;"></a-mixin>
-        <a-mixin id="circle" mixin="window"
-          geometry="primitive: circle; radius: 0.75;"></a-mixin>
-        <a-mixin id="triangle" mixin="window" rotation="0 0 180"
-          geometry="primitive: triangle;" scale="3 3 2"></a-mixin>
-        <a-mixin id="diamond" mixin="window" rotation = "0 0 45"
-          geometry="primitive: plane; width: 1.5; height: 1.5" scale="1.25 1.25 1"></a-mixin>
-        <a-mixin id="bars" mixin="window" rotation = "0 0 0"
-          geometry="primitive: plane; width: 2.5; height: 1.5;"></a-mixin>
-        <a-mixin id="windows" entity-colors="mixin: rect; num: 4; color_type: flip; slower: 1; every: 2; 
-                                             fromcolor: #00FF00; tocolor: #FF0000; alternate: false" 
-                 layout="type: box; columns: 2; marginRow: 4; marginColumn: 3">
-        </a-mixin>     
-        <a-mixin id="buildingblock" entity-circle="mixin: windows; num: 3; axis: y; angle: 90;" layout="type: building; radius: 1"
-             geometry="primitive: box; width: 6.8; height: 7.5; depth: 6.8" material="color: #000000"></a-mixin>
-        <a-mixin id="building" building-builder></a-mixin>
-        
-        <a-mixin id="roadash" geometry="primitive: plane; width:0.25; height:2" material="color: #ffdf00; shader: flat" rotation="0 0 90"></a-mixin>
-        <a-mixin id="spot" light="type: spot; castShadow: true; angle: 30; color: #FFFF00"></a-mixin>
-        <a-mixin id="lit" geometry="primitive:circle; radius: 5"
-                 material="color: #fdffa3; shader:flat; opacity: 0.5 transparent:true; src:https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fwhiteblur.png?1513817944824"></a-mixin>
-        <a-mixin id="lcone" geometry="primitive:cone; radiusBottom: 3; height: 8" material="color: #fdffa3; opacity: 0.5"></a-mixin>
-        <a-mixin id="lamp" rotation="0 0 0" scale="2 2 2" gpoly="polyid:awUS2qoxeSa; API_KEY:AIzaSyAJ19aF1HSKdyzV4-OKtITR2MoKkSkh7rQ;"></a-mixin>
-        <a-mixin id="fliplamp" rotation="0 180 0" scale="2 2 2" gpoly="polyid:awUS2qoxeSa; API_KEY:AIzaSyAJ19aF1HSKdyzV4-OKtITR2MoKkSkh7rQ;"></a-mixin>
-        <a-mixin id="blur" scale="0.8 0.8" geometry="primitive:plane" 
-                 material="color: #fdffa3; shader:flat; transparent:true; src:https://cdn.glitch.com/c43f301b-a64d-4479-87e0-4646a6a065cb%2Fwhiteblur.png?1513817944824"></a-mixin>
-        <a-mixin id="car" crossorigin="anonymous" scale="0.025 0.025 0.025" gpoly="useMaterials: false; polyid: 8ACz9InIO0c; API_KEY: AIzaSyAJ19aF1HSKdyzV4-OKtITR2MoKkSkh7rQ;"></a-mixin>
+      </a-assets>
       
-        <a-mixin id="gridpattern" material="side: double; shader: grid-shader; resolution: 65.0; intensity: 10.0; speed: 0.5; color: #00FFFF; backgroundColor: #001020"></a-mixin>
-        <a-mixin id="gridpattern2" material="side: double; shader: grid-shader; resolution: 250.0; intensity: 10.0; speed: 0.5; color: #FFFF00; backgroundColor: #101010"></a-mixin>
-        <a-mixin id="gridpatternsky" material="shader: grid-shader; resolution: 100.0; intensity: 10.0; speed: 0.5; color: white; backgroundColor: #000000"></a-mixin>
-      <!--
-      Comment section
-      entity-generator="mixin: window; num: 16; rainbow: true; speed: 10"
-      <a-mixin id="rotating" animation__rotate="property: rotation; easing: easeInOutSine; dir: alternate; dur: 8000; loop: true; to: 0 360 0"></a-mixin>
-       <a-entity slide="speed: 0" entity-generator="mixin: spot; num: 5" layout="type: line; margin: 10" position="0 0.75 -0.2" rotation="0 0 0" scale="5 5 5" src="#blur-image" color="#FFFF00"></a-entity>
-      <a-plane rainbowcycle="offset: 200; speed: 30" visible="false" position="2 0 -5" rotation="0 0 0" width="5" height="2" shader="flat" shadow></a-plane>
-      <a-sky visible="true" id="image-360" src="#green" radius="1000" rotation="30 0 0" position="0 0 0"></a-sky>
-      entity-generator="mixin: lamp blur, lcone lit"
-      -->
-      </a-assets>   
+      <a-entity id="fractal" rng-fractal-shader="width:5; resolution: 0 0 0 1; skip: 9.05" position="0 2 -1" rotation="0 100 -45"></a-entity>
       
-      <!-- Basic environment assets -->
-      <a-sky visible="true" id="starsky" src="#stars" radius="9500" rotation="0 10 0" position="0 -50 0"></a-sky>
-      <a-entity light="type: ambient; intensity: 0.3; distance: 50; decay: 2" position="0 10 10"></a-entity>
       
-      <a-entity position = "0 -11000 0" geometry="primitive: sphere; radius: 10000; segmentsWidth: 200; segmentsHeight: 200;" rotation="0 90 50"
-                material="side: double; shader: gasplanet-shader; permutations: 1.0; iterations: 1.0; speed: 2.0; 
-                          brightness: 0.75; resolution: 16.0; color1: #00FF00; color2: #FF00FF; color3: #0000FF"></a-entity>
-      <a-entity position = "5000 -1000 5000" geometry="primitive: sphere; radius: 3000; segmentsWidth: 200; segmentsHeight: 200;" rotation="0 90 10"
-                material="side: double; shader: gasplanet-shader; permutations: 1.0; iterations: 1.0; speed: 4.0; 
-                          brightness: 0.75; resolution: 8.0; color1: #FF6000; color2: #FFFFFF; color3: #FF0000"></a-entity>
-      <a-entity position = "-7500 7500 500" geometry="primitive: sphere; radius: 4000; segmentsWidth: 200; segmentsHeight: 200;" rotation="90 0 0"
-                material="side: double; shader: gasplanet-shader; permutations: 1.0; iterations: 1.0; speed: 2.0; 
-                          brightness: 0.75; resolution: 6.0; color1: #502500; color2: #0000FF; color3: #00ddff"></a-entity>
-      
-      <!-- Main menu -->
-      <a-entity id="menu" position="0 2 -2.5">
-        <a-entity id="menu-layout" layout="type: circle; radius: 12" scale="0.05 0.05 0.05">
-          <a-entity template="src: #opal-link"></a-entity>
-          <a-entity template="src: #about-link" data-thumb="#exbot"></a-entity>
-          <a-entity template="src: #bismuth-link"></a-entity>
-          <a-entity template="src: #ganzfeld-link"></a-entity>
+      <a-entity id="camera" camera="userHeight: 0;" position="0 0 0" my-look-controls camera-manager>
+        <a-entity visible="false" id="click-instruction" text="value: Test; color: orange; align: center"
+                  scale="2 2 2" position="0 -0.05 -1.75" rotation="0 0 0"></a-entity>
         </a-entity>
-        <a-entity id="main" template="src: #main-link" scale="1 1 1" position="0 -1000 2" rotation="-20 0 0"></a-entity>
-        <a-entity id="toggle" template="src: #toggle-link" scale="1 1 1" position="0 -1000 2" rotation="-10 0 0"></a-entity>
-      </a-entity>
-      
-      
-      <!-- Camera and children -->
-      <a-entity id="camera" camera="userHeight: 0.4; near: 0.25" position="0 0.1 -1" look-controls
-                camera-manager="speed: 12; stop: -2800; id: main" rotation="0 0 0">
-        <a-entity id="analyser" audioanalyser="src: #side; enableBeatDetection: false;" ></a-entity>
-        
-        <a-cursor id="cursor" material="color: gray" position="0 0 0.5"
-          animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
-          animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500"
-          animation__defusing="property: scale; startEvents: mouseleave; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
-          event-set__1="_event: mouseenter; color: #f441a6"
-          event-set__2="_event: mouseleave; color: gray;"
-          fuse="true"
-          raycaster="objects: .link">
-        </a-cursor>
-        
-        <a-entity id="click-instruction" text="value: Click to use VR cursor.\n\nHover to select. \nESC to unlock cursor.; color: orange; align: center"
-                  scale="2 2 2" position="0 -0.05 -1.75" rotation="0 0 0" animation__opacity="property: text.opacity; from: 0; to: 1; dur: 10000"></a-entity>
-      </a-entity>
-      
-      <!--
-      <a-entity id="TBC" text-geometry="value: To Be Continued...;" material="shader: disco-shader; resolution: 0.5; color: #001040; backgroundColor: #FF00FF; speed: 1" position="0 1000 10" scale="2 2 2"
-                class="beatlistener330" animation__move="property: position; from: -5 0 -5000; to: -5 0 -2910; easing: easeOutCubic; dur: 30000; startEvents: beat"></a-entity>
-
-      <a-entity rng-building-shader="static: 1 0; colorstyle: 1 0 0 0; color1: black; action: spaceship" position="0 0 -60" allrotate
-                audio-react="property: shader-color; analyserEl: #analyser; multiplier: 0.75; build: 1; startbeat: 2"></a-entity>
-      <a-box height="100" width="1000" position="0 0 -900" ></a-box>
-      Cool skybox that didn't fit in anywhere
-      <a-sky visible="true" mixin="gridpatternsky" radius="6500" rotation="0 10 0" position="0 -50 -2000"></a-sky>
-      Car with shader (need to find a way to feasibly get this on the road)
-      <a-entity mixin="car" position="1 1.2 28" rotation="0 180 0"
-                material="shader: caustic-shader; resolution: 2; color: yellow; backgroundColor: black; speed: 0.3; brightness: 1"></a-entity>
-      
-      <a-entity id="camera" camera="userHeight: 1.6; near: 0.5" my-look-controls
-                camera-manager="speed: 0; rise: -900; stop: -1550; id: main" position="0 0 0" rotation="0 0 0">
-
-      <a-box material="color:red" audio-react="analyserEl: #analyser" position="0 2 8.5"></a-box>
-
-      <!-- beat: 594.059 half beat: 297.029 totalbeats: 464 camera-speed: 12 -->
     </a-scene>
   </body>
 </html>

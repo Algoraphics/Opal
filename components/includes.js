@@ -364,11 +364,9 @@ AFRAME.registerComponent('my-look-controls', {
     // Call enter VR handler if the scene has entered VR before the event listeners attached.
     if (this.el.sceneEl.is('vr-mode')) { 
       this.onEnterVR();
-      document.querySelector('#click-instruction').setAttribute('visible', 'false');
       this.clickInstruction = false;
     }
     else if (isMobile() || debug) {
-      document.querySelector('#click-instruction').setAttribute('visible', 'false');
       this.clickInstruction = false;
     }
     else {
@@ -605,10 +603,6 @@ AFRAME.registerComponent('my-look-controls', {
     if (!this.mouseLocked) { // Needs to be able to read screen width: && event.screenX > 350 && event.screenX < 700 && event.screenY > 520 && event.screenY < 620) {
       this.mouseLocked = true;
       this.el.sceneEl.canvas.style.cursor = 'none';
-      if (this.clickInstruction) {
-        document.querySelector('#click-instruction').setAttribute('animation__scale', "property: text.opacity; from: 1; to: 0; dur: 1000");
-        document.querySelector('#click-instruction').setAttribute('animation__opacity', "property: scale; from: 2 2 2; to: 0.01 0.01 0.01; delay: 1000; dur: 1");
-      }
     }
     this.previousMouseEvent = evt;
     document.body.classList.add(GRABBING_CLASS);
@@ -628,10 +622,6 @@ AFRAME.registerComponent('my-look-controls', {
     if(evt.keyCode === 27) { // Escape key code
       this.mouseLocked = false;
       this.el.sceneEl.canvas.style.cursor = 'crosshair';
-      if (this.clickInstruction) {
-        document.querySelector('#click-instruction').setAttribute('animation__scale', "property: scale; from: 0.01 0.01 0.01; to: 2 2 2; dur: 1");
-        document.querySelector('#click-instruction').setAttribute('animation__opacity', "property: text.opacity; from: 0; to: 1; dur: 1000");
-      }
     }
   },
 
