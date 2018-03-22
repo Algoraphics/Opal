@@ -10,6 +10,7 @@
 var basic = `
 varying vec2 vUv;
 varying vec3 vPosition;
+varying float vNoise;
 
 void main() {
   vUv = uv;
@@ -446,7 +447,7 @@ void main( void ) {
 	vec2 p = (vUv.xy - 0.5) * zoom;
 	vec3 col = vec3(0.0);
 	
-	for (int i=0; i<3; i++)
+	for (int i=0; i<10; i++)
 		p.xy = pattern(p);
 	
 	col.rg = sin(p.xy);
@@ -542,76 +543,6 @@ void main()
 `
 });
 
-// see https://shaderfrog.com/app/view/57
-AFRAME.registerShader('disco-shader', {
-  schema: {
-    timeMsec: {type: 'time', is: 'uniform'},
-    speed: {type: 'float', is: 'uniform'},
-    resolution: {type: 'float', is: 'uniform'},
-    
-    color: {type: 'color', is: 'uniform'},
-    backgroundColor: {type: 'color', is: 'uniform'},
-  },
-
-  vertexShader: `
-precision highp float;
-precision highp int;
-
-varying vec2 vUv;
-
-void main() {
-    vUv = uv;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-}
-`,
-  fragmentShader: `
-// Credit http://glslsandbox.com/e#24567.0
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec2 vUv;
-
-uniform float timeMsec;
-uniform float speed;
-uniform float resolution;
-uniform vec3 color;
-uniform vec3 backgroundColor;
-
-#define PI 3.1415926535
-
-float rand(vec2 co){ return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453); }
-
-void main( void ) {
-  float time = timeMsec / 1000.0; // Convert from A-Frame milliseconds to typical time in seconds.
-	vec2 pos = (resolution*vUv.xy);
-	pos *= 10.;
-	
-	vec2 interval = pos * vec2(10.0, 5.);
-	if (mod(interval.y, 2.) < 1.) {
-	    interval.y = -interval.y + 1.;
-	}
-	
-	vec2 fi = floor(interval);
-	if (mod(fi.x, 2.) < 1.) {
-	    fi.y = -fi.y + interval.y;
-	} else{
-	    fi.y = fi.y - interval.y + 1.;
-	}
-	
-	float outputColor = pow(
-	    sin(mod(
-	        speed*time, 2.*PI) + rand(vec2(floor(interval.x + fi.y),
-	     floor(interval.y))) * 200.
-	     ),
-    3.);
-    vec3 outcolor = backgroundColor * outputColor + color * (1.0 - outputColor);
-	gl_FragColor = vec4(outcolor , 1.);
-}	
-`
-});
-
 var electricfrag = `
 float surface3 ( vec3 coord ) {
 
@@ -636,32 +567,6 @@ void main( void ) {
     gl_FragColor = vec4( s, 1.0 );
 }
 `
-// see https://shaderfrog.com/app/view/43
-AFRAME.registerShader('electric-shader', {
-  schema: {
-    timeMsec: {type: 'time', is: 'uniform'},
-    speed: {type: 'float', is: 'uniform'},
-    brightness: {type: 'float', is: 'uniform'},
-    resolution: {type: 'float', is: 'uniform'},
-    displacement: {type: 'float', is: 'uniform'},
-    scale: {type: 'float', is: 'uniform'},
-    
-    color: {type: 'color', is: 'uniform'},
-  },
-
-  vertexShader: randomripple + `
-
-void main() {
-  float time = timeMsec / 2000.0;
-  vUv = uv;
-  vPosition = position;
-  vNoise = cnoise(normalize(position) * scale + time * speed * 0.25);
-  vec3 pos = position + normal * vNoise * vec3(displacement);
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-}
-`,
-  fragmentShader: randomripple + electricfrag
-});
 
 AFRAME.registerShader('gasplanet-shader', {
   schema: {
@@ -739,7 +644,7 @@ void main() {
   float time = timeMsec / 6000.0;
   
   // relative coordinates
-  vec2 p = vec2(vUv*resolution)*vec2(1., 3.);
+  vec2 p = vec2(vUv*16.)*vec2(1., 3.);
   float t = time * .009 * speed;
   
   // calling fbm on itself
@@ -784,7 +689,7 @@ void main() {
     - Added uniforms and keyboard controls for user control
     - Integration with Perlin noise ripples for some involvement of 3D for VR
 */
-AFRAME.registerShader('fractal-opal-shader', {
+AFRAME.registerShader('fractal-shader', {
   schema: {
     timeMsec: {type: 'time', is: 'uniform'},
     resolution: {type: 'float', is: 'uniform'},
@@ -797,7 +702,7 @@ AFRAME.registerShader('fractal-opal-shader', {
     speed: {type: 'float', is: 'uniform'},
   },
 
-  vertexShader: fractalvert,
+  vertexShader: basic,
   fragmentShader: `
 precision highp float;
 
@@ -820,7 +725,7 @@ void main(void){
   vec2 resolution = vec2(resolution, resolution);
 	vec2 v = (vUv - 0.5) * resolution;
 	vec2 vv = v; vec2 vvv = v;
-	float tm = time*0.01*4.0;
+	float tm = time*0.05*1.0;
 
   float shiftsine = sin(tm) * 0.4 + 0.75;
 	vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
@@ -833,37 +738,37 @@ void main(void){
 	float R = 0.0;
 	float RR = 0.0;
 	float RRR = 0.0;
+  // TODO make this not 10 unless mouse is working
 	float a = (.6-mspt.x)*6.2;
 	float C = cos(a);
 	float S = sin(a);
 	vec2 xa=vec2(C, -S);
-	vec2 ya=vec2(S, C);
-	vec2 cshift = vec2( 0, 1.62);
-	float Z = 1.0 + mspt.y*6.0;
-	float ZZ = 1.0 + (mspt.y)*6.2;
-	float ZZZ = 1.0 + (mspt.y)*6.9;
+	vec2 ya=vec2(S, C) * twist;
+	float Z = 1.0 + mspt.y;//*6.0;
+	float ZZ = 1.0 + mspt.y;//*6.2;
+	float ZZZ = 1.0 + (mspt.y);//*6.9;
 	
-	for ( int i = 0; i < 40; i++ ){
+	for ( int i = 0; i < 30; i++ ){
     // dot product leaves square of magnitude of v
 		float r = dot(v,v);
-		if ( r > (1.0*twist) )
+		if ( r > 1.0 )
 		{
-			r = (1.0*twist)/r ;
+			r = (1.0)/r ;
 			v.x = v.x * r * shatter;
 			v.y = v.y * r;
 		}
 		R *= .99;
 		R += r;
-		if(i < 39){
+		if(i < 29){
 			RR *= .99;
 			RR += r;
-			if(i < 38){
+			if(i < 28){
 				RRR *= .99;
 				RRR += r;
 			}
 		}
 		
-		v = vec2( dot(v, xa), dot(v, ya)) * Z + cshift;
+		v = vec2( dot(v, xa), dot(v, ya)) * Z * ZZ + shift;
 	}
 	float c = ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
 	float cc = ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
@@ -874,7 +779,15 @@ void main(void){
 `
 });
 
-AFRAME.registerShader('fractal-bismuth-shader', {
+/*
+  Built from http://glslsandbox.com/e#44551.1, which was originally inspired by
+  http://www.fractalforums.com/new-theories-and-research/very-simple-formula-for-fractal-patterns/
+  Changes include:
+    - Updated harmonic function for more consistently interesting patterning
+    - Added uniforms and keyboard controls for user control
+    - Integration with Perlin noise ripples for some involvement of 3D for VR
+*/
+AFRAME.registerShader('simple-fractal-shader', {
   schema: {
     timeMsec: {type: 'time', is: 'uniform'},
     resolution: {type: 'float', is: 'uniform'},
@@ -887,7 +800,7 @@ AFRAME.registerShader('fractal-bismuth-shader', {
     speed: {type: 'float', is: 'uniform'},
   },
 
-  vertexShader: fractalvert,
+  vertexShader: basic,
   fragmentShader: `
 precision highp float;
 
@@ -901,10 +814,251 @@ uniform float twist;
 
 varying float vNoise;
 
+//#define timeMsec (timeMsec + 100.0 * 2000.0)
+
+float box(vec2 _st, vec2 _size, float _smoothEdges){
+    _size = vec2(0.5)-_size*0.5;
+    vec2 aa = vec2(_smoothEdges*0.5);
+    vec2 uv = smoothstep(_size,_size+aa,_st);
+    uv *= smoothstep(_size,_size+aa,vec2(1.0)-_st);
+    return uv.x*uv.y;
+}
+
+vec2 tile(vec2 _st, float _zoom){
+    _st *= _zoom;
+    return fract(_st);
+}
+
+void main(void){
+  //float time = (timeMsec + 50.0 * val * 2000.0) / 2000.0; // Convert from A-Frame milliseconds to typical time in seconds.
+  // 200 for ripples
+  float time = (3.14159265358979 / (4.0*594.059)) * (timeMsec + skip * 100.0 * 2000.0); 
+  vec2 resolution = vec2(resolution, resolution);
+	vec2 v = (vUv - 0.5) * resolution;
+	vec2 vv = v; vec2 vvv = v;
+	float tm = time*0.01*4.0;
+
+  //float shiftsine = sin(tm) * 0.4 + 0.75;
+	//vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
+  //float mshift = shiftsine/2.0 + 0.2; // Shift for noise-dependent patterns
+
+	vec2 mspt = (vec2(
+			sin(tm)+cos(tm*0.5)+sin(tm*-0.5)+cos(tm*0.1)+sin(tm*0.2),
+			cos(tm)+sin(tm*0.1)+cos(tm*0.8)+sin(tm*-1.1)+cos(tm*1.5)
+			)+4.4)*0.06;
+	//vec2 msimple = vec2(sin(tm),sin(2.*tm))*1.0;
+	float R = 0.0;
+	float RR = 0.0;
+	float RRR = 0.0;
+	float a = (.6-mspt.x)*6.2;
+	float C = cos(a);
+	float S = sin(a);
+	vec2 xa=vec2(C, -S);
+	vec2 ya=vec2(S, C);
+	vec2 shift = vec2( 0, 1.62);
+	float Z = 1.0 + mspt.y*6.0;
+	float ZZ = 1.0 + (mspt.y)*6.2;
+	float ZZZ = 1.0 + (mspt.y)*6.9;
+
+  //vec2 st = vUv/resolution;
+	//st = tile(st,3.);
+	//vec3 dabox = vec3(box(st,vec2(1.1),0.5));
+	
+	for ( int i = 0; i < 30; i++ ){
+		float r = dot(v,v);
+		if ( r > 1.0 *twist)
+		{
+			r = (1.0*twist)/r ;
+			v.x = v.x * r;
+			v.y = v.y * r * shatter;
+		}
+		/*
+		float rr = r * (1.0 - step(loop - 1., i));
+		float rrr = r * (1.0 - step(loop - 2., i));
+		float val = 0.99 * (1.0 - step(loop - 1., i));
+		float val2 = 0.99 * (1.0 - step(loop - 2., i));
+		
+    R *= 1.1*sin(tm);
+		R += r;
+		RR *= 1.1*sin(0.55*tm);
+		RR += r;
+		RRR *= 1.1*sin(tm*0.39);
+		RRR += r;
+    */
+    R *= .99;
+		R += r;
+		if(i < 29){
+			RR *= .99;
+			RR += r;
+			if(i < 28){
+				RRR *= .99;
+				RRR += r;
+			}
+		}
+		
+		v = vec2( dot(v, xa), dot(v, ya)) * Z + shift;
+	}
+	float c = (0.15*sin(tm*0.2) + 0.1) + ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
+	float cc = (0.15*sin(tm*0.3) + 0.1) + ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
+	float ccc = (0.15*sin(tm*0.4) + 0.1) + ((mod(RRR,2.0)>1.0)?1.0-fract(RRR):fract(RRR));
+  
+	gl_FragColor = vec4(ccc, cc, c, 1.0); 
+}
+`
+});
+
+/*
+  Built from http://glslsandbox.com/e#44551.1, which was originally inspired by
+  http://www.fractalforums.com/new-theories-and-research/very-simple-formula-for-fractal-patterns/
+  Changes include:
+    - Updated harmonic function for more consistently interesting patterning
+    - Added uniforms and keyboard controls for user control
+    - Integration with Perlin noise ripples for some involvement of 3D for VR
+*/
+AFRAME.registerShader('simpler-fractal-shader', {
+  schema: {
+    timeMsec: {type: 'time', is: 'uniform'},
+    resolution: {type: 'float', is: 'uniform'},
+    skip: {type: 'float', is: 'uniform'},
+    displacement: {type: 'float', is: 'uniform'},
+    shatter: {type: 'float', is: 'uniform'},
+    twist: {type: 'float', is: 'uniform'},
+    scale: {type: 'float', is: 'uniform'},
+    vertexnoise: {type: 'float', is: 'uniform'},
+    speed: {type: 'float', is: 'uniform'},
+  },
+
+  vertexShader: basic,
+  fragmentShader: `
+precision highp float;
+
+varying vec2 vUv;
+
+uniform float timeMsec;
+uniform float resolution;
+uniform float skip;
+uniform float shatter;
+uniform float twist;
+
+varying float vNoise;
+
+//#define timeMsec (timeMsec + 100.0 * 2000.0)
+
+void main(void){
+  //float time = (timeMsec + 50.0 * val * 2000.0) / 2000.0; // Convert from A-Frame milliseconds to typical time in seconds.
+  // 200 for ripples
+  float time = (3.14159265358979 / (4.0*594.059)) * (timeMsec + skip * 100.0 * 2000.0); 
+  vec2 resolution = vec2(resolution, resolution);
+	vec2 v = (vUv - 0.5) * resolution;
+	vec2 vv = v; vec2 vvv = v;
+	float tm = time*0.01*10.0;
+
+  //float shiftsine = sin(tm) * 0.4 + 0.75;
+	//vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
+  //float mshift = shiftsine/2.0 + 0.2; // Shift for noise-dependent patterns
+
+	vec2 mspt = (vec2(
+			sin(tm)+cos(tm*0.5)+sin(tm*-0.5)+cos(tm*0.1)+sin(tm*0.2),
+			cos(tm)+sin(tm*0.1)+cos(tm*0.8)+sin(tm*-1.1)+cos(tm*1.5)
+			)+4.4)*0.06;
+	vec2 msimple = vec2(sin(tm),sin(2.*tm))*1.0;
+	float R = 1.0;
+	float RR = 0.0;
+	float RRR = 0.0;
+	float a = (msimple.y);
+	float C = cos(a);
+	float S = sin(a);
+	vec2 xa=vec2(C, -S);
+	vec2 ya=vec2(S, C);
+	vec2 shift = vec2( 0, 1.2*sin(0.82*tm));
+	float Z = 1.0 + msimple.y*6.0;
+	float ZZ = 1.0 + (msimple.y)*6.2;
+	float ZZZ = 1.0 + (msimple.y)*6.9;
+	
+	for ( int i = 0; i < 12; i++ ){
+		float r = dot(v,v);
+		if ( r > 1.0 )
+		{
+			r = (1.0)/r ;
+			v.x = v.x * r;
+			v.y = v.y * r;
+		}
+		
+		//R *= 1.1*sin(tm);
+		//R += r;
+		//RR *= 1.1*sin(0.55*tm);
+		//RR += r;
+		//RRR *= 1.1*sin(tm*0.39);
+		//RRR += r;
+		if(i < 11){
+			RR *= .99;
+			RR += r;
+			if(i < 10){
+				RRR *= .99;
+				RRR += r;
+			}
+		}
+		
+		v = vec2( dot(v, xa), dot(v, ya)) * Z + shift;
+	}
+	float c = (0.15*sin(tm*0.2) + 0.1) + ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
+	float cc = (0.15*sin(tm*0.3) + 0.1) + ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
+	float ccc = (0.15*sin(tm*0.4) + 0.1) + ((mod(RRR,2.0)>1.0)?1.0-fract(RRR):fract(RRR));
+  
+	gl_FragColor = vec4(ccc, cc, c, 1.0); 
+}
+`
+});
+
+AFRAME.registerShader('square-fractal-shader', {
+  schema: {
+    timeMsec: {type: 'time', is: 'uniform'},
+    resolution: {type: 'float', is: 'uniform'},
+    skip: {type: 'float', is: 'uniform'},
+    displacement: {type: 'float', is: 'uniform'},
+    shatter: {type: 'float', is: 'uniform'},
+    twist: {type: 'float', is: 'uniform'},
+    scale: {type: 'float', is: 'uniform'},
+    vertexnoise: {type: 'float', is: 'uniform'},
+    speed: {type: 'float', is: 'uniform'},
+  },
+
+  vertexShader: basic,
+  fragmentShader: `
+precision highp float;
+
+varying vec2 vUv;
+
+uniform float timeMsec;
+uniform float resolution;
+uniform float skip;
+uniform float shatter;
+uniform float twist;
+
+varying float vNoise;
+
+//#define timeMsec (timeMsec + 100.0 * 2000.0)
+
+void main(void){
+  //float time = (timeMsec + 50.0 * val * 2000.0) / 2000.0; // Convert from A-Frame milliseconds to typical time in seconds.
+  // 200 for ripples
+  float time = (3.14159265358979 / (4.0*594.059)) * (timeMsec + skip * 100.0 * 2000.0); 
+  vec2 resolution = vec2(resolution, resolution);
+	vec2 v = (vUv - 0.5) * resolution;
+	vec2 vv = v; vec2 vvv = v;
+	#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
+
+#define time (time + 100.0)
 #define PI 3.14159265358979323846
 
 float box(vec2 _st, vec2 _size, float _smoothEdges){
-    _size = vec2(1.75)-_size*0.75;
+    _size = vec2(0.5)-_size*0.5;
     vec2 aa = vec2(_smoothEdges*0.5);
     vec2 uv = smoothstep(_size,_size+aa,_st);
     uv *= smoothstep(_size,_size+aa,vec2(1.0)-_st);
@@ -924,80 +1078,71 @@ vec2 rotate2D(vec2 _st, float _angle, vec2 shift){
     return _st;
 }
 
-//#define timeMsec (timeMsec + 100.0 * 2000.0)
-
 void main(void){
-  //float time = (timeMsec + 50.0 * val * 2000.0) / 2000.0; // Convert from A-Frame milliseconds to typical time in seconds.
-  // 200 for ripples
-  float time = (3.14159265358979 / (4.0*594.059)) * (timeMsec + skip * 100.0 * 2000.0); 
-  vec2 resolution = vec2(resolution, resolution) + 5.0;
-	vec2 v = (vUv - 0.5) * resolution;
+	vec2 v = (gl_FragCoord.xy - resolution/2.0) / min(resolution.y,resolution.x) * 5.0;
 	vec2 vv = v; vec2 vvv = v;
-	float tm = time*0.01*4.0;
-
-  float shiftsine = sin(tm) * 0.4 + 0.75;
-	vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
-  float mshift = shiftsine/2.0 + 0.2; // Shift for noise-dependent patterns
-
+	float tm = time*0.33;
 	vec2 mspt = (vec2(
-			sin(tm)+cos(tm*0.5)+sin(tm*-0.5)+cos(tm*0.1)+sin(tm*0.2) + (vNoise / (20.0*mshift)),
-			cos(tm)+sin(tm*0.1)+cos(tm*0.8)+sin(tm*-1.1)+cos(tm*1.5) + (vNoise / (50.0*mshift))
-			)+5.2)*0.06;
-	//vec2 simple = (vec2(sin(tm), cos(tm)) * 0.32) + 1.11;
-  //vec2 simple = (vec2(sin(tm) + (vNoise / (20.0*mshift)), cos(tm) + (vNoise / (20.0*mshift))) + 1.5) * 0.15;
-  float R = 0.0;
+			sin(tm)+cos(tm*0.2)+sin(tm*0.5)+cos(tm*-0.4)+sin(tm*1.3),
+			cos(tm)+sin(tm*0.1)+cos(tm*0.8)+sin(tm*-1.1)+cos(tm*1.5)
+			)+3.)*0.05; //5x harmonics, scale back to [0,1]
+	
+	
+	
+	float R = 0.0;
 	float RR = 0.0;
 	float RRR = 0.0;
-  // TODO make this not 10 unless mouse is working
 	float a = (.6-mspt.x)*6.2;
 	float C = cos(a);
 	float S = sin(a);
 	vec2 xa=vec2(C, -S);
 	vec2 ya=vec2(S, C);
-  vec2 cshift = vec2( 1.2, 1.62);
+	vec2 shift = vec2( 0, 1.62);
 	float Z = 1.0 + mspt.y*6.0;
-	float ZZ = 1.0 + mspt.y*6.2;
+	float ZZ = 1.0 + (mspt.y)*6.2;
 	float ZZZ = 1.0 + (mspt.y)*6.9;
-
-  vec2 b = 5.*vUv.xy/(resolution);
-	b = rotate2D(b, PI*Z, 0.05*xa);
 	
-	for ( int i = 0; i < 25; i++ ){
+	vec2 b = gl_FragCoord.xy/(resolution);
+	b = rotate2D(b, PI*Z, 0.05*xa);
+	//b = vec2(box(b,vec2(1.1),0.95));
+	
+	for ( int i = 0; i < 30; i++ ){
 		float br = dot(b,b);
 		float r = dot(v,v);
-		if ( r > (sin(tm) + 3.0) )
+		if ( r > 4.0 )
 		{
-			r = (sin(tm) + 3.0)/r ;
-			v.x = v.x * r * shatter;
-			v.y = v.y * r;
+			r = (4.0)/r ;
+			v.x = v.x * r + 0.;
+			v.y = v.y * r + 0.;
 		}
 		if ( br > 0.75 )
 		{
-			br = (0.56)/br;
+			br = (0.56)/br ;
+			//v.x = v.x * r + 0.;
+			//v.y = v.y * r + 0.;
 		}
 		
 		R *= 1.05;
 		R += br;//b.x;
-		if(i < 24){
+		if(i < 29){
 			RR *= 1.05;
 			RR += br;//b.x;
-			if(i <23){
+			if(i <28){
 				RRR *= 1.05;
 				RRR += br;//b.x;
 			}
 		}
 		
-		v = vec2( dot(v, xa), dot(v, ya)) * Z + cshift;
-		//b = vec2( dot(b.xy, xa), dot(b.xy, ya)) * Z + cshift;
+		v = vec2( dot(v, xa), dot(v, ya)) * Z + shift;
+		//b = vec2( dot(b.xy, xa), dot(b.xy, ya)) * Z + shift;
 		//b = rotate2D(vec2( dot(v, xa), dot(v, ya)), PI*Z, ya);
 		//b = vec2( dot(b, xa), dot(b, ya));
-		b = vec2(box(v,vec2(5.*twist),0.9*twist)) + cshift * 0.42;
-  }
+		b = 1.0*vec2(box(v,vec2(5.),3.0)) + shift * 0.0;
+	}
 	float c = ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
 	float cc = ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
 	float ccc = ((mod(RRR,2.0)>1.0)?1.0-fract(RRR):fract(RRR));
-  
-	gl_FragColor = vec4(ccc, cc, c, 1.0); 
+	gl_FragColor = vec4(ccc,cc,c, 1.0);
 }
 `
 });

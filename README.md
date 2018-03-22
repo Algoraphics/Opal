@@ -1,52 +1,67 @@
-# Psycho Bubbles
+# Opal
 
 **What is this?**
 
-This project is basically a showcase of shaders I've made or messed around with while playing with [A-Frame](https://aframe.io). 
+This is a showcase of a shader I found and updated, made with [A-Frame](https://aframe.io).
 
-It is built to show off the full capabilities of shaders in VR, and so will probably melt any mobile device (not really, but the framerate will be awful). If you'd like to see a mobile visualizer, try [Opal](https://opal.glitch.me/).
+I think it's at its coolest if you put on some music, sit back, relax, and watch it play.
 
-You can select one of the bubbles for a cool visualization (more info can be found in each bubble) or simply enjoy the view from the menu.
+This page has been kept simple so that the maximum number of devices are supported. If you've got a powerful PC and want to see some more visualizations, check out [Psycho-Bubbles](https://psycho-bubbles.glitch.me/).
 
 **Questions? Comments? Bugs? Job Offers? Cool Links? Angry Rants?**
 - Email:  *algoraphics@gmail.com*
 - Twitter:  [@algoraphics](https://twitter.com/algoraphics)
 
+**Keyboard Controls**
+- Q/E : Move time forward/backward
+- Z/X : Zoom in/out
+- C/V : Shatter/Reverse
+- N/M : Twist/Reverse
+- B : Undo all Shatter and Twist
+
 **Setup**
+
+*Mobile*
+1. Open [Opal](https://opal.glitch.me/).
+2. If you have mobile VR, turn device sideways and insert into VR headset.
 
 *PC VR:*
 1. Have Firefox 10, or another browser which [supports A-Frame VR.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html)
 2. *Make sure your VR supported browser is closed.* Not always necessary, but helps to prevent issues.
 3. Start your VR headset (Boot up SteamVR, open Oculus Home, etc)
-4. Open WebVR supported browser and load up [Psycho-Bubbles](https://psycho-bubbles.glitch.me/).
+4. Open WebVR supported browser and load up [Opal](https://opal.glitch.me/).
 5. Hit the button in the bottom-right corner to enter VR. Put on your headset.
 
 *2D:*
 1. Open a browser which [supports A-Frame.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html#which-browsers-does-a-frame-support)
-2. Load up [Psycho-Bubbles](https://psycho-bubbles.glitch.me/).
+2. Load up [Opal](https://opal.glitch.me/).
 
-**Where can it run?**
+**Where Can It Run?**
 
-Theoretically, it should work on Rift, Windows MR, etc, as long as you follow [A-Frame conventions for getting WebVR to run.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html)
+Theoretically, it should work on Rift, and any VR-ready mobile phone as long as you follow [A-Frame conventions for getting WebVR to run.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html)
 
-List of devices on which this is confirmed to work:
+Confirmed Working:
 - Vive running with Firefox 10 on Windows 10
+- Iphone 8, 7, 6, SE
+- Samsung Galaxy S9
 - Google Chrome on Windows 10
 - Google Chrome on Ubuntu
 - Google Chrome on iOS
 - Safari on iOS
 - Firefox 10 on Windows 10
 
+Confirmed Not Working (low framerate)
+- Moto Z Play
+- Samsung Galaxy S6
+
 **Troubleshooting/FAQ:**
 
-- Refreshing the page will fix many problems:
-  - Buttons out of place/missing, not responding to click/touch/hover, etc.
-  - Seems like not everything has loaded (sky is white, main menu is missing, etc.)
-- I'm in a colorful bubble and I don't see any buttons! What do?
-  - Look down. The info menu might be minimized, and the toggle button is below you.
-- The screen is just...white.
-  - Are you on a mobile device, or computer with a weak graphics card? You may not be able to run this page.
-  - If you're unsure, check if your browser [supports A-Frame.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html#which-browsers-does-a-frame-support)
+- It still seems to be loading and the framerate is awful!
+  - On some phones (e.g. iPhone 6 and 7) there is a long loading period, after which it will run smoothly.
+- The framerate is awful and it's done loading!
+  - Check
+- Screen is white, it doesn't seem to be loading
+  - Make sure your browser [supports A-Frame.](https://aframe.io/docs/0.7.0/introduction/vr-headsets-and-webvr-browsers.html#which-browsers-does-a-frame-support)
 - Vive issues:
   - Cannot start SteamVR (app running):
     - Find your browser and call end process on it. Restart SteamVR.
@@ -55,5 +70,7 @@ List of devices on which this is confirmed to work:
   - Loading forever (from within VR, even if display shows up on desktop):
     - Refresh page and try again.
     - If this does not work, close browser window, reboot SteamVR, and re-open window.
-- Performance:
-  - Displaying the webpage on both your VR headset and desktop will hurt performance. Minimize the window on desktop or open another random tab instead.
+  - Outside of the bubble, or too close to it:
+    - Make sure you're in the center of your play space.
+  - Performance:
+    - Displaying the webpage on both your VR headset and desktop will hurt performance. Minimize the window on desktop or open another random tab instead.
