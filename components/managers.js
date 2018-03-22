@@ -1,6 +1,7 @@
 /* global AFRAME, THREE, beat, bind, Uint8Array, isMobile, checkHeadsetConnected */
 
-var debug = false;
+var debug = true;
+var minimenu = false;
 
 /*
   Animate a menu item to grow around the camera. Assumes a mini menu is used
@@ -25,10 +26,6 @@ function surround(el) {
   // Update info text for whichever surround bubble is selected
   var infotext = document.querySelector('#info-text');
   infotext.setAttribute('text', "value: " + this.infotext);
-  
-  // Streetlights need to move out of the way, interfere with surround bubbles
-  document.querySelector('#streetlightsleft').setAttribute('animation__rotation', 'property: rotation; from: 0 90 0; to: -180 90 0; dur: 1; delay: 500');
-  document.querySelector('#streetlightsright').setAttribute('animation__rotation', 'property: rotation; from: 0 90 0; to: 180 90 0; dur: 1; delay: 500');
 }
 
 /* 
@@ -45,7 +42,7 @@ function start(el) {
   emitToClass(el, 'link', 'togglehide');
   // Display Load/Begin text
   var begin = document.querySelector('#begin');
-  begin.emit('show');
+  begin.emit('togglehide');
   begin.setAttribute('animation__position', 'property: position; from: -0.25 -1 -0.25; to: -0.375 0.3 -0.5; dur: 500');
   begin.setAttribute('animation__scale', 'property: scale; from: 1 1 1; to: 5 5 5; dur: 500');
   // Only disable this button if it's going to be showing a "loading" text
@@ -84,16 +81,18 @@ function main(el) {
   // Make sure the toggle button is visible since the start button makes it invisible
   var toggle = document.querySelector('#toggle');
   toggle.setAttribute('visible', true);
+  
+  document.querySelector('#cursor').setAttribute("visible", true);
 }
 
 // Simple function to toggle minimenu
 function toggle(el) {
-  this.minimenu = !this.minimenu;
-  togglemini(this.minimenu);
+  minimenu = !minimenu;
+  togglemini(minimenu);
 }
 
 // Toggle whether the mini menu is visible
-function togglemini(minimenu) {
+function togglemini(enabled) {
   // Constants for when menu is disabled
   var mainy = -10; var prevmainy = -0.7;
   var toggly = -1.2; var prevtoggly = -0.5;
@@ -101,7 +100,7 @@ function togglemini(minimenu) {
   var prevrotx = -10; var rotx = -90;
   
   // Constants for when menu is enabled
-  if (minimenu) {
+  if (enabled) {
     mainy = -0.7; prevmainy = -10;
     toggly = -0.5; var prevtoggly = -1.2;
     z = 0.35; prevz = 1.2;
@@ -112,13 +111,14 @@ function togglemini(minimenu) {
   main.setAttribute('animation__position', 'property: position; from: 0 ' + prevmainy + ' 0.4; to: 0 ' + mainy + ' 0.4; dur: 1000; easing: easeInCirc');
   // Info text is hidden, make it visible
   var infotext = document.querySelector('#info-text');
-  infotext.setAttribute('animation__visible', 'property: visible; from: ' + !minimenu + '; to: ' + minimenu + '; dur: 1; delay: 1000;');
+  infotext.setAttribute('animation__visible', 'property: visible; from: ' + !enabled + '; to: ' + enabled + '; dur: 1; delay: 1000;');
   // Also button to toggle the menu on and off
   var toggle = document.querySelector('#toggle');
   toggle.setAttribute('animation__position', 'property: position; from: 0 ' + prevtoggly + ' ' + prevz + '; to: 0 ' + toggly  + ' ' + z + '; dur: 1000');
   toggle.setAttribute('animation__rotation', 'property: rotation; from: ' + prevrotx + ' 0 0; to: ' + rotx + ' 0 0; dur: 1000');
   // Cursor should only be visible if mini menu is visible
-  document.querySelector('#cursor').setAttribute("visible", minimenu);
+  document.querySelector('#cursor').setAttribute("visible", enabled);
+  minimenu = enabled;
 }
 
 // Sent an input message to all menu items
@@ -243,9 +243,6 @@ AFRAME.registerComponent('menu-item', {
         var postr = -pos.x + ' ' + (-pos.y + 2) + ' ' + 30; // zpos is simply scaled cam distance from menu
         this.setAttribute('animation__position', 'property: position; from: ' + postr + '; to: 0 0 0; dur: 1000');
         this.setAttribute('animation__scale', 'property: scale; from: 7.75 7.75 7.75; to: 1 1 1; dur: 1000');
-        
-        document.querySelector('#streetlightsleft').setAttribute('animation__rotation', 'property: rotation; from: -180 90 0; to: 0 90 0; dur: 250');
-        document.querySelector('#streetlightsright').setAttribute('animation__rotation', 'property: rotation; from: 180 90 0; to: 0 90 0; dur: 250');
         
         document.querySelector('#cursor').setAttribute("visible", true);
         
@@ -446,10 +443,10 @@ AFRAME.registerComponent('camera-manager', {
     if (el.getAttribute('id') == 'camera') {
       if (checkHeadsetConnected()) {
         el.setAttribute('look-controls','');
-        el.setAttribute('position', '0 1.6 30');
+        el.setAttribute('position', '0 1.6 0');
         document.querySelector('#click-instruction').setAttribute('visible', 'false');
         if (isMobile()) {
-          el.setAttribute('position', '0 1.6 30');
+          el.setAttribute('position', '0 2 0');
         }
       }
       else {
@@ -513,113 +510,6 @@ AFRAME.registerComponent('camera-manager', {
       el.setAttribute('position', positionTmp);
     }
   }
-});
-
-/*
-  Simply listens for a beat and makes itself visible at that beat.
-*/
-AFRAME.registerComponent('timedinvisible', {
-  init: function () {
-    var el = this.el;
-    el.setAttribute('visible', true);
-    el.addEventListener('beat', function (event) {
-      this.setAttribute('visible', false);
-    })
-  }
-});
-
-/*
-  Removes itself when a certain beat is hit
-*/
-AFRAME.registerComponent('timedisabler', {
-  init: function () {
-    this.el.addEventListener('beat', function (event) {
-      this.parentNode.removeChild(this);
-    });
-  }
-});
-
-AFRAME.registerComponent('gotospace', {
-  init: function () {
-    this.el.blastoff = false;
-    
-    this.el.addEventListener('beat', function (event) {
-      this.blastoff = true;
-    });
-    
-    this.index = 0;
-  },
-  tick: function () {
-    if (this.el.blastoff) {
-      switch(this.index) {
-        case 2:
-          var boxleft = document.querySelector('#boxleft');
-          boxleft.parentNode.removeChild(boxleft);
-          var boxright = document.querySelector('#boxright');
-          boxright.parentNode.removeChild(boxright);
-          break;
-        case 3:
-          var boxfront = document.querySelector('#boxfront');
-          boxfront.parentNode.removeChild(boxfront);
-          var boxback = document.querySelector('#boxback');
-          boxback.parentNode.removeChild(boxback);
-          break;
-        case 4:
-          var gridleft = document.querySelector('#gridleft');
-          gridleft.parentNode.removeChild(gridleft);
-          var gridright = document.querySelector('#gridright');
-          gridright.parentNode.removeChild(gridright);
-          break;
-        case 6:
-          var floor = document.querySelector('#floor');
-          floor.parentNode.removeChild(floor);
-          var floorleft = document.querySelector('#floorleft');
-          floorleft.parentNode.removeChild(floorleft);
-          var flooright = document.querySelector('#flooright');
-          flooright.parentNode.removeChild(flooright);
-          var road = document.querySelector('#road');
-          road.parentNode.removeChild(road);
-          break;
-        case 8:
-          var sky = document.querySelector('#sunsky');
-          sky.setAttribute('visible', false);
-          var starcolor = document.querySelector('#starcolor');
-          starcolor.setAttribute('animation__vanish', "property: material.opacity; from: 0.4; to: 0;");
-          break; 
-      }
-      this.index++;
-      var starcolor = document.querySelector('#starcolor');
-    }
-  }
-});
-
-AFRAME.registerComponent('removetunnels', {
-  init: function () {
-    this.el.addEventListener('beat', function (event) {
-      switch(event.detail) {
-        case 352:
-          var ring = document.querySelector('#ringportal');
-          ring.parentNode.removeChild(ring);
-          var building = document.querySelector('#buildingportal');
-          building.parentNode.removeChild(building);
-          this.setAttribute('class', 'beatlistener' + (event.detail + 30));
-          console.log("Removing ring and building!");
-          break;
-        case 382:
-          var disco = document.querySelector('#discotunnel');
-          disco.parentNode.removeChild(disco);
-          var electric = document.querySelector('#electrictunnel');
-          electric.parentNode.removeChild(electric);
-          this.setAttribute('class', 'beatlistener' + (event.detail + 2));
-          console.log("Removing disco and electric!");
-          break;
-        case 384:
-          var kal = document.querySelector('#kaltunnel');
-          kal.setAttribute('animation__scale2', "property: scale; from: 1 1 1; to: 0.01 0.01 0.01;");
-          kal.setAttribute('animation__visible', "property: visible; from: true; to: false; delay: 1000");
-      }
-    });
-  },
 });
 
 /*
