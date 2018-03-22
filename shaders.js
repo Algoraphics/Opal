@@ -739,7 +739,7 @@ void main() {
   float time = timeMsec / 6000.0;
   
   // relative coordinates
-  vec2 p = vec2(vUv*16.)*vec2(1., 3.);
+  vec2 p = vec2(vUv*resolution)*vec2(1., 3.);
   float t = time * .009 * speed;
   
   // calling fbm on itself
@@ -784,7 +784,7 @@ void main() {
     - Added uniforms and keyboard controls for user control
     - Integration with Perlin noise ripples for some involvement of 3D for VR
 */
-AFRAME.registerShader('fractal-shader', {
+AFRAME.registerShader('fractal-opal-shader', {
   schema: {
     timeMsec: {type: 'time', is: 'uniform'},
     resolution: {type: 'float', is: 'uniform'},
@@ -820,7 +820,7 @@ void main(void){
   vec2 resolution = vec2(resolution, resolution);
 	vec2 v = (vUv - 0.5) * resolution;
 	vec2 vv = v; vec2 vvv = v;
-	float tm = time*0.01*1.0;
+	float tm = time*0.01*4.0;
 
   float shiftsine = sin(tm) * 0.4 + 0.75;
 	vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
@@ -833,22 +833,22 @@ void main(void){
 	float R = 0.0;
 	float RR = 0.0;
 	float RRR = 0.0;
-  // TODO make this not 10 unless mouse is working
 	float a = (.6-mspt.x)*6.2;
 	float C = cos(a);
 	float S = sin(a);
 	vec2 xa=vec2(C, -S);
-	vec2 ya=vec2(S, C) * twist;
-	float Z = 1.0 + mspt.y;//*6.0;
-	float ZZ = 1.0 + mspt.y;//*6.2;
-	float ZZZ = 1.0 + (mspt.y);//*6.9;
+	vec2 ya=vec2(S, C);
+	vec2 cshift = vec2( 0, 1.62);
+	float Z = 1.0 + mspt.y*6.0;
+	float ZZ = 1.0 + (mspt.y)*6.2;
+	float ZZZ = 1.0 + (mspt.y)*6.9;
 	
 	for ( int i = 0; i < 40; i++ ){
     // dot product leaves square of magnitude of v
 		float r = dot(v,v);
-		if ( r > 1.0 )
+		if ( r > (1.0*twist) )
 		{
-			r = (1.0)/r ;
+			r = (1.0*twist)/r ;
 			v.x = v.x * r * shatter;
 			v.y = v.y * r;
 		}
@@ -863,7 +863,7 @@ void main(void){
 			}
 		}
 		
-		v = vec2( dot(v, xa), dot(v, ya)) * Z * ZZ + shift;
+		v = vec2( dot(v, xa), dot(v, ya)) * Z + cshift;
 	}
 	float c = ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
 	float cc = ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
@@ -874,202 +874,130 @@ void main(void){
 `
 });
 
-var complexjupiter = `
-#define F4 0.309016994374947451
-#define PI 3.14159
+AFRAME.registerShader('fractal-bismuth-shader', {
+  schema: {
+    timeMsec: {type: 'time', is: 'uniform'},
+    resolution: {type: 'float', is: 'uniform'},
+    skip: {type: 'float', is: 'uniform'},
+    displacement: {type: 'float', is: 'uniform'},
+    shatter: {type: 'float', is: 'uniform'},
+    twist: {type: 'float', is: 'uniform'},
+    scale: {type: 'float', is: 'uniform'},
+    vertexnoise: {type: 'float', is: 'uniform'},
+    speed: {type: 'float', is: 'uniform'},
+  },
 
-uniform float timeMsec;
-uniform float permutations;
-uniform float iterations;
-uniform vec3 color1;
-uniform vec3 color2;
-uniform vec3 color3;
-uniform float brightness;
-uniform float speed;
+  vertexShader: fractalvert,
+  fragmentShader: `
+precision highp float;
 
 varying vec2 vUv;
 
-vec4 mod289(vec4 x) {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
+uniform float timeMsec;
+uniform float resolution;
+uniform float skip;
+uniform float shatter;
+uniform float twist;
+
+varying float vNoise;
+
+#define PI 3.14159265358979323846
+
+float box(vec2 _st, vec2 _size, float _smoothEdges){
+    _size = vec2(1.75)-_size*0.75;
+    vec2 aa = vec2(_smoothEdges*0.5);
+    vec2 uv = smoothstep(_size,_size+aa,_st);
+    uv *= smoothstep(_size,_size+aa,vec2(1.0)-_st);
+    return uv.x*uv.y;
 }
 
-float mod289(float x) {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
+vec2 tile(vec2 _st, float _zoom){
+    _st *= _zoom;
+    return fract(_st);
 }
 
-vec4 permute(vec4 x) {
-    return mod289(((x*34.0)+1.0)*x);
+vec2 rotate2D(vec2 _st, float _angle, vec2 shift){
+    _st -= 0.5 + shift.x;
+    _st =  mat2(cos(_angle),-sin(_angle),
+                sin(_angle),cos(_angle)) * _st;
+    _st += 0.5 + shift.y;
+    return _st;
 }
 
-float permute(float x) {
-    return mod289(((x*34.0)+1.0)*x);
-}
+//#define timeMsec (timeMsec + 100.0 * 2000.0)
 
-vec4 taylorInvSqrt(vec4 r) {
-    return 1.79284291400159 - 0.85373472095314 * r;
-}
+void main(void){
+  //float time = (timeMsec + 50.0 * val * 2000.0) / 2000.0; // Convert from A-Frame milliseconds to typical time in seconds.
+  // 200 for ripples
+  float time = (3.14159265358979 / (4.0*594.059)) * (timeMsec + skip * 100.0 * 2000.0); 
+  vec2 resolution = vec2(resolution, resolution) + 5.0;
+	vec2 v = (vUv - 0.5) * resolution;
+	vec2 vv = v; vec2 vvv = v;
+	float tm = time*0.01*4.0;
 
-float taylorInvSqrt(float r) {
-    return 1.79284291400159 - 0.85373472095314 * r;
-}
+  float shiftsine = sin(tm) * 0.4 + 0.75;
+	vec2 shift = vec2(0, shiftsine); // Shift to set overall fractal
+  float mshift = shiftsine/2.0 + 0.2; // Shift for noise-dependent patterns
 
-vec4 grad4(float j, vec4 ip) {
-    const vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);
-    vec4 p,s;
+	vec2 mspt = (vec2(
+			sin(tm)+cos(tm*0.5)+sin(tm*-0.5)+cos(tm*0.1)+sin(tm*0.2) + (vNoise / (20.0*mshift)),
+			cos(tm)+sin(tm*0.1)+cos(tm*0.8)+sin(tm*-1.1)+cos(tm*1.5) + (vNoise / (50.0*mshift))
+			)+5.2)*0.06;
+	//vec2 simple = (vec2(sin(tm), cos(tm)) * 0.32) + 1.11;
+  //vec2 simple = (vec2(sin(tm) + (vNoise / (20.0*mshift)), cos(tm) + (vNoise / (20.0*mshift))) + 1.5) * 0.15;
+  float R = 0.0;
+	float RR = 0.0;
+	float RRR = 0.0;
+  // TODO make this not 10 unless mouse is working
+	float a = (.6-mspt.x)*6.2;
+	float C = cos(a);
+	float S = sin(a);
+	vec2 xa=vec2(C, -S);
+	vec2 ya=vec2(S, C);
+  vec2 cshift = vec2( 1.2, 1.62);
+	float Z = 1.0 + mspt.y*6.0;
+	float ZZ = 1.0 + mspt.y*6.2;
+	float ZZZ = 1.0 + (mspt.y)*6.9;
 
-    p.xyz = floor( fract (vec3(j) * ip.xyz) * 7.0) * ip.z - 1.0;
-    p.w = 1.5 - dot(abs(p.xyz), ones.xyz);
-    s = vec4(lessThan(p, vec4(0.0)));
-    p.xyz = p.xyz + (s.xyz*2.0 - 1.0) * s.www;
-
-    return p;
-}
-
-float snoise(vec4 v) {
-    const vec4  C = vec4( 0.138196601125011,  // (5 - sqrt(5))/20  G4
-            0.276393202250021,  // 2 * G4
-            0.414589803375032,  // 3 * G4
-            -0.447213595499958); // -1 + 4 * G4
-
-    // First corner
-    vec4 i  = floor(v + dot(v, vec4(F4)) );
-    vec4 x0 = v -   i + dot(i, C.xxxx);
-
-    // Other corners
-
-    // Rank sorting originally contributed by Bill Licea-Kane, AMD (formerly ATI)
-    vec4 i0;
-    vec3 isX = step( x0.yzw, x0.xxx );
-    vec3 isYZ = step( x0.zww, x0.yyz );
-    //  i0.x = dot( isX, vec3( 1.0 ) );
-    i0.x = isX.x + isX.y + isX.z;
-    i0.yzw = 1.0 - isX;
-    //  i0.y += dot( isYZ.xy, vec2( 1.0 ) );
-    i0.y += isYZ.x + isYZ.y;
-    i0.zw += 1.0 - isYZ.xy;
-    i0.z += isYZ.z;
-    i0.w += 1.0 - isYZ.z;
-
-    // i0 now contains the unique values 0,1,2,3 in each channel
-    vec4 i3 = clamp( i0, 0.0, 1.0 );
-    vec4 i2 = clamp( i0-1.0, 0.0, 1.0 );
-    vec4 i1 = clamp( i0-2.0, 0.0, 1.0 );
-
-    //  x0 = x0 - 0.0 + 0.0 * C.xxxx
-    //  x1 = x0 - i1  + 1.0 * C.xxxx
-    //  x2 = x0 - i2  + 2.0 * C.xxxx
-    //  x3 = x0 - i3  + 3.0 * C.xxxx
-    //  x4 = x0 - 1.0 + 4.0 * C.xxxx
-    vec4 x1 = x0 - i1 + C.xxxx;
-    vec4 x2 = x0 - i2 + C.yyyy;
-    vec4 x3 = x0 - i3 + C.zzzz;
-    vec4 x4 = x0 + C.wwww;
-
-    // Permutations
-    i = mod289(i);
-    float j0 = permute( permute( permute( permute(i.w) + i.z) + i.y) + i.x);
-    vec4 j1 = permute( permute( permute( permute (
-                        i.w + vec4(i1.w, i2.w, i3.w, 1.0 ))
-                    + i.z + vec4(i1.z, i2.z, i3.z, 1.0 ))
-                + i.y + vec4(i1.y, i2.y, i3.y, 1.0 ))
-            + i.x + vec4(i1.x, i2.x, i3.x, 1.0 ));
-
-    // Gradients: 7x7x6 points over a cube, mapped onto a 4-cross polytope
-    // 7*7*6 = 294, which is close to the ring size 17*17 = 289.
-    vec4 ip = vec4(1.0/294.0, 1.0/49.0, 1.0/7.0, 0.0) ;
-
-    vec4 p0 = grad4(j0,   ip);
-    vec4 p1 = grad4(j1.x, ip);
-    vec4 p2 = grad4(j1.y, ip);
-    vec4 p3 = grad4(j1.z, ip);
-    vec4 p4 = grad4(j1.w, ip);
-
-    // Normalise gradients
-    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-    p0 *= norm.x;
-    p1 *= norm.y;
-    p2 *= norm.z;
-    p3 *= norm.w;
-    p4 *= taylorInvSqrt(dot(p4,p4));
-
-    // Mix contributions from the five corners
-    vec3 m0 = max(0.6 - vec3(dot(x0,x0), dot(x1,x1), dot(x2,x2)), 0.0);
-    vec2 m1 = max(0.6 - vec2(dot(x3,x3), dot(x4,x4)            ), 0.0);
-    m0 = m0 * m0;
-    m1 = m1 * m1;
-    return(
-        49.0 * ( dot(m0*m0, vec3( dot( p0, x0 ), dot( p1, x1 ), dot( p2, x2 )))
-            + dot(m1*m1, vec2( dot( p3, x3 ), dot( p4, x4 ) ) ) )
-    );
-
-}
-
-// makes a pseudorandom number between 0 and 1
-float hash(float n) {
-    return fract(sin(n)*93942.234);
-}
-
-float clampedNoise( vec4 p ) {
-    return clamp( 0.4 * 0.2 + snoise( p ), 0.0, 1.0 );
-}
-
-// rotation matrix
-mat2 m = mat2(0.6,0.8,-0.8,0.6);
-
-// fractional brownian motion (i.e. photoshop clouds)
-float fbm(vec4 p) {
-    float f = 0.0;
-    f += 0.5 * clampedNoise(vec4( p.xy * m, p.zw * m ));
-    p *= 2.02;
-    f += 0.25 * clampedNoise(vec4( p.xy * m, p.zw * m ));
-    p *= 2.01;
-    f += 0.125 * clampedNoise(vec4( p.xy * m, p.zw * m ));
-    p *= 2.03;
-    f += 0.0625 * clampedNoise(vec4( p.xy * m, p.zw * m ));
-    f /= 0.9375;
-    return f;
-}
-
-void main() {
-    float time = timeMsec / 2000.0;
+  vec2 b = 5.*vUv.xy/(resolution);
+	b = rotate2D(b, PI*Z, 0.05*xa);
+	
+	for ( int i = 0; i < 25; i++ ){
+		float br = dot(b,b);
+		float r = dot(v,v);
+		if ( r > (sin(tm) + 3.0) )
+		{
+			r = (sin(tm) + 3.0)/r ;
+			v.x = v.x * r * shatter;
+			v.y = v.y * r;
+		}
+		if ( br > 0.75 )
+		{
+			br = (0.56)/br;
+		}
+		
+		R *= 1.05;
+		R += br;//b.x;
+		if(i < 24){
+			RR *= 1.05;
+			RR += br;//b.x;
+			if(i <23){
+				RRR *= 1.05;
+				RRR += br;//b.x;
+			}
+		}
+		
+		v = vec2( dot(v, xa), dot(v, ya)) * Z + cshift;
+		//b = vec2( dot(b.xy, xa), dot(b.xy, ya)) * Z + cshift;
+		//b = rotate2D(vec2( dot(v, xa), dot(v, ya)), PI*Z, ya);
+		//b = vec2( dot(b, xa), dot(b, ya));
+		b = vec2(box(v,vec2(5.*twist),0.9*twist)) + cshift * 0.42;
+  }
+	float c = ((mod(R,2.0)>1.0)?1.0-fract(R):fract(R));
+	float cc = ((mod(RR,2.0)>1.0)?1.0-fract(RR):fract(RR));
+	float ccc = ((mod(RRR,2.0)>1.0)?1.0-fract(RRR):fract(RRR));
   
-    // relative coordinates
-    vec2 uvScale = vec2(1.0, 4.0);
-    vec2 p = vUv * uvScale;
-    float elapsed = time * speed * 0.01;
-
-    float s = vUv.x * uvScale.x;
-    float t = vUv.y * uvScale.y;
-
-    // Tiling 4d noise based on
-    // https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise/23639#23639
-    float multiplier = iterations / ( 2.0 * PI );
-    float nx = cos( s * 2.0 * PI ) * multiplier;
-    float ny = cos( t * 2.0 * PI ) * multiplier;
-    float nz = sin( s * 2.0 * PI ) * multiplier;
-    float nw = sin( t * 2.0 * PI ) * multiplier;
-
-    vec4 tile4d = vec4( nx, ny, nz, nw );
-
-    vec2 a = vec2(
-        fbm( tile4d + elapsed * 1.1 ),
-        fbm( tile4d - elapsed * 1.3 )
-    );
-
-    vec2 b = vec2(
-        fbm( tile4d + elapsed * 1.2 + a.x * 2.0 ),
-        fbm( tile4d - elapsed * 1.2 + a.y * 3.0 )
-    );
-
-    float surf = fbm( tile4d + elapsed + length( b ) * permutations );
-
-    // mix in some color
-    vec3 colorOutput = brightness * (
-        ( ( b.x + surf ) * color1 ) +
-        ( ( b.y + surf ) * color2 ) +
-        ( ( surf + b.x ) * color3 )
-    );
-
-    gl_FragColor = vec4( colorOutput, 1.);
+	gl_FragColor = vec4(ccc, cc, c, 1.0); 
 }
 `
+});
